@@ -8,7 +8,7 @@ const IO_BASE  = import.meta.env.VITE_IO_BASE  ?? 'http://localhost:3001' // Nod
 export default function App() {
   const [tech, setTech] = useState('stomp')
   const [author, setAuthor] = useState('juan')
-  const [name, setName] = useState('plano-1')
+  const [name, setName] = useState('blueprint-1')
   const canvasRef = useRef(null)
 
   const stompRef = useRef(null)
@@ -74,15 +74,15 @@ export default function App() {
 
   return (
     <div style={{fontFamily:'Inter, system-ui', padding:16, maxWidth:900}}>
-      <h2>BluePrints RT – Socket.IO vs STOMP</h2>
+      <h2>BluePrints RT - Socket.IO vs STOMP</h2>
       <div style={{display:'flex', gap:8, alignItems:'center', marginBottom:8}}>
-        <label>Tecnología:</label>
+        <label>Technology:</label>
         <select value={tech} onChange={e=>setTech(e.target.value)}>
           <option value="stomp">STOMP (Spring)</option>
           <option value="socketio">Socket.IO (Node)</option>
         </select>
-        <input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="autor"/>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="plano"/>
+        <input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="author"/>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="blueprint"/>
       </div>
       <canvas
         ref={canvasRef}
@@ -91,7 +91,7 @@ export default function App() {
         style={{border:'1px solid #ddd', borderRadius:12}}
         onClick={onClick}
       />
-      <p style={{opacity:.7, marginTop:8}}>Tip: abre 2 pestañas y dibuja alternando para ver la colaboración.</p>
+      <p style={{opacity:.7, marginTop:8}}>Tip: open 2 tabs and draw alternately to see collaboration.</p>
     </div>
   )
 }
