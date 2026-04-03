@@ -1,10 +1,10 @@
 # Lab P4 — BluePrints en Tiempo Real (Sockets & STOMP)
 
-> **Repositorio:** `DECSIS-ECI/Lab_P4_BluePrints_RealTime-Sokets`  
+> **Repositorio:** `TerraFour-ECI/arsw-blueprints-api-realtime-sockets-lab`  
 > **Front:** React + Vite (Canvas, CRUD, y selector de tecnología RT)  
 > **Backends guía (elige uno o compáralos):**
-> - **Socket.IO (Node.js):** https://github.com/DECSIS-ECI/example-backend-socketio-node-/blob/main/README.md
-> - **STOMP (Spring Boot):** https://github.com/DECSIS-ECI/example-backend-stopm/tree/main
+> - **Socket.IO (Node.js):** https://github.com/TerraFour-ECI/blueprints-example-backend-socketio-node
+> - **STOMP (Spring Boot):** https://github.com/TerraFour-ECI/blueprints-example-backend-stomp
 
 ## 🎯 Objetivo del laboratorio
 Implementar **colaboración en tiempo real** para el caso de BluePrints. El Front consume la API CRUD de la Parte 3 (o equivalente) y habilita tiempo real usando **Socket.IO** o **STOMP**, para que múltiples clientes dibujen el mismo plano de forma simultánea.
