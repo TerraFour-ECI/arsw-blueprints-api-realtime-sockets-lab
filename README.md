@@ -196,4 +196,4 @@ vitest.config.js
 
 ## License
 
-MIT (or your course/team license policy).
+MIT [LICENSE](LICENSE)
