@@ -1,177 +1,199 @@
-# Lab P4 — BluePrints in Real Time (Sockets & STOMP)
+# BluePrints RT Lab P4 - Dual Transport Collaboration Studio
 
-> **Repository:** `TerraFour-ECI/arsw-blueprints-api-realtime-sockets-lab`  
-> **Front-end:** React + Vite (Canvas, CRUD, and RT technology selector)  
-> **Reference backends (choose one or compare both):**
-> - **Socket.IO (Node.js):** https://github.com/TerraFour-ECI/blueprints-example-backend-socketio-node
-> - **STOMP (Spring Boot):** https://github.com/TerraFour-ECI/blueprints-example-backend-stomp
+<div align="center">
 
-## 🎯 Lab objective
-Implement **real-time collaboration** for the BluePrints case. The front-end consumes the Part 3 CRUD API (or equivalent) and enables real-time features using **Socket.IO** or **STOMP**, so multiple clients can draw on the same blueprint simultaneously.
+![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-010101?style=for-the-badge&logo=socket.io&logoColor=white)
+![STOMP](https://img.shields.io/badge/STOMP-WebSocket-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![SonarCloud](https://img.shields.io/badge/Quality-SonarCloud-orange?style=for-the-badge)
 
-By the end of the lab, the team must:
-1. Integrate the front-end with its **CRUD API** (list/create/update/delete blueprints, and total points per author).
-2. Connect the front-end to a **real-time** backend (Socket.IO **or** STOMP) following the reference repositories.
-3. Demonstrate **live collaboration** (two browser tabs viewing the same blueprint).
+A production-style laboratory front-end that combines **REST CRUD** with **real-time collaboration** using **both transports**:
+**Socket.IO (Node.js)** and **STOMP (Spring Boot)**.
 
----
-
-## 🧩 Scope and functional criteria
-- **CRUD** (REST):
-  - `GET /api/blueprints?author=:author` → list by author (includes total points).
-  - `GET /api/blueprints/:author/:name` → blueprint points.
-  - `POST /api/blueprints` → create.
-  - `PUT /api/blueprints/:author/:name` → update.
-  - `DELETE /api/blueprints/:author/:name` → delete.
-- **Real-time (RT)** (choose one):
-  - **Socket.IO** (rooms): `join-room`, `draw-event` → broadcast `blueprint-update`.
-  - **STOMP** (topics): `@MessageMapping("/draw")` → `convertAndSend(/topic/blueprints.{author}.{name})`.
-- **UI**:
-  - Canvas with **click-to-draw** behavior (incremental).
-  - Author panel: blueprint **table** and **total points** (`reduce`).
-  - Action bar: **Create / Save/Update / Delete** and **technology selector** (None / Socket.IO / STOMP).
-- **DX/Quality**: clean code, error handling, team README.
+</div>
 
 ---
 
-## 🏗️ Architecture (quick view)
+## Why this repository matters
 
-```
-React (Vite)
- ├─ HTTP (REST CRUD + initial state) ───────────────> Your API (P3 / custom)
- └─ Real-time (choose one):
-     ├─ Socket.IO: join-room / draw-event ──────────> Socket.IO Server (Node)
-     └─ STOMP: /app/draw -> /topic/blueprints.* ────> Spring WebSocket/STOMP
+This lab implements all P4 objectives over a polished, testable, and CI-ready React codebase:
+
+- Full BluePrints CRUD integration (`GET/POST/PUT/DELETE`).
+- Real-time sync selector with three modes: `None`, `Socket.IO`, `STOMP`.
+- Live canvas collaboration by room/topic: `blueprints.{author}.{name}`.
+- Author dashboard with blueprint table + point totals.
+- Lint, tests, coverage, and build scripts aligned with SonarCloud workflow.
+
+---
+
+## Quick architecture
+
+```mermaid
+flowchart LR
+  A[React UI - Vite] --> B[REST API /api/blueprints]
+  A --> C{Realtime mode}
+  C -->|Socket.IO| D[Node Socket.IO backend :3001]
+  C -->|STOMP| E[Spring STOMP backend :8080]
+  C -->|None| F[Local canvas only]
+  D --> G[(Room: blueprints.author.name)]
+  E --> H[(Topic: /topic/blueprints.author.name)]
 ```
 
-**Recommended conventions**  
-- **Blueprint as channel/room**: `blueprints.{author}.{name}`  
-- **Point payload**: `{ x, y }`
+### Runtime sequence (draw event)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U1 as User Tab A
+  participant FE1 as Frontend A
+  participant RT as RT Backend (Socket.IO or STOMP)
+  participant FE2 as Frontend B
+  participant U2 as User Tab B
+
+  U1->>FE1: Click canvas
+  FE1->>FE1: Append local point
+  FE1->>RT: Emit draw-event / publish /app/draw
+  RT-->>FE2: Broadcast blueprint-update
+  FE2->>FE2: Merge incoming point
+  FE2-->>U2: Repaint canvas
+```
 
 ---
 
-## 📦 Reference repositories (clone/review)
-- **Socket.IO (Node.js)**: https://github.com/DECSIS-ECI/example-backend-socketio-node-/blob/main/README.md  
-  - *Typical client usage:* `io(VITE_IO_BASE, { transports: ['websocket'] })`, `join-room`, `draw-event`, `blueprint-update`.
-- **STOMP (Spring Boot)**: https://github.com/DECSIS-ECI/example-backend-stopm/tree/main  
-  - *Typical client usage:* `@stomp/stompjs` → `client.publish('/app/draw', body)`; subscribe to `/topic/blueprints.{author}.{name}`.
+## Functional scope delivered
+
+- **CRUD REST**
+  - `GET /api/blueprints?author=:author`
+  - `GET /api/blueprints/:author/:name`
+  - `POST /api/blueprints`
+  - `PUT /api/blueprints/:author/:name`
+  - `DELETE /api/blueprints/:author/:name`
+- **Real-time**
+  - `Socket.IO`: `join-room`, `draw-event`, `blueprint-update`
+  - `STOMP`: `/app/draw`, `/topic/blueprints.{author}.{name}`
+- **UI**
+  - Click-to-draw canvas
+  - Blueprint list by author
+  - Running total of points by author
+  - Create / Save-Update / Delete actions
+  - Transport selector: None / Socket.IO / STOMP
 
 ---
 
-## ⚙️ Environment variables (Front-end)
-Create `.env.local` at the root of the **front-end** project:
+## Environment setup
+
+Create `.env.local`:
+
 ```bash
-# REST (your CRUD backend)
+# CRUD API (Part 3 backend or equivalent)
 VITE_API_BASE=http://localhost:8080
 
-# Real-time: point to one or the other depending on the backend you use
-VITE_IO_BASE=http://localhost:3001     # if you use Socket.IO (Node)
-VITE_STOMP_BASE=http://localhost:8080  # if you use STOMP (Spring)
+# Socket.IO backend (Node guide backend)
+VITE_IO_BASE=http://localhost:3001
+
+# STOMP backend (Spring guide backend)
+VITE_STOMP_BASE=http://localhost:8080
 ```
-In the UI, select the technology in the **RT selector**.
 
 ---
 
-## 🚀 Getting started
+## Run guide
 
-### 1) RT backend (choose one)
+### 1) Start one or both realtime backends
 
-**Option A — Socket.IO (Node.js)**  
-Follow the README in the reference repository:  
-https://github.com/DECSIS-ECI/example-backend-socketio-node-/blob/main/README.md
+- Socket.IO backend reference:
+  https://github.com/TerraFour-ECI/blueprints-example-backend-socketio-node
+- STOMP backend reference:
+  https://github.com/TerraFour-ECI/blueprints-example-backend-stomp
+
+### 2) Start this front-end
+
 ```bash
-npm i
+npm install
 npm run dev
-# serves: http://localhost:3001
-# quick initial-state test:
-curl http://localhost:3001/api/blueprints/juan/blueprint-1
 ```
 
-**Option B — STOMP (Spring Boot)**  
-Follow the reference repository:  
-https://github.com/DECSIS-ECI/example-backend-stopm/tree/main
+Open: `http://localhost:5173`
+
+---
+
+## Quality and CI commands
+
 ```bash
-./mvnw spring-boot:run
-# serves: http://localhost:8080
-# WS endpoint (example): /ws-blueprints
+npm run lint
+npm run test
+npm run coverage
+npm run build
 ```
 
-### 2) Front-end (this repository)
-```bash
-npm i
-npm run dev
-# http://localhost:5173
+These commands are aligned with the GitHub Actions + SonarCloud pipeline in `.github/workflows/sonarcloud.yml`.
+
+---
+
+## Screenshot evidence plan (recommended)
+
+Create an `images/` folder and capture these screenshots:
+
+1. **01-dashboard-overview.png**
+   - Full UI with author panel, realtime selector, and canvas.
+2. **02-socketio-live-sync.png**
+   - Two tabs open with `Socket.IO`, drawing replicated.
+3. **03-stomp-live-sync.png**
+   - Two tabs open with `STOMP`, drawing replicated.
+4. **04-crud-create-and-list.png**
+   - Create action and updated table with point totals.
+5. **05-save-update-points.png**
+   - Added points + Save/Update success feedback.
+6. **06-delete-blueprint.png**
+   - Before/after delete evidence.
+7. **07-ci-local-validation.png**
+   - Terminal with lint, test, coverage, build all passing.
+
+Example embed block:
+
+```md
+## Evidence
+
+![Dashboard](images/01-dashboard-overview.png)
+![Socket.IO Sync](images/02-socketio-live-sync.png)
+![STOMP Sync](images/03-stomp-live-sync.png)
 ```
-In the UI: select **Socket.IO** or **STOMP**, define `author` and `name`, open **two tabs**, and draw on the canvas (clicks).
 
 ---
 
-## 🔌 Real-time protocols (minimum detail)
+## Suggested demo script (<= 90s)
 
-### A) Socket.IO
-- **Join room**
-  ```js
-  socket.emit('join-room', `blueprints.${author}.${name}`)
-  ```
-- **Send point**
-  ```js
-  socket.emit('draw-event', { room, author, name, point: { x, y } })
-  ```
-- **Receive update**
-  ```js
-  socket.on('blueprint-update', (upd) => { /* append points y repintar */ })
-  ```
-
-### B) STOMP
-- **Publish point**
-  ```js
-  client.publish({ destination: '/app/draw', body: JSON.stringify({ author, name, point }) })
-  ```
-- **Subscribe to topic**
-  ```js
-  client.subscribe(`/topic/blueprints.${author}.${name}`, (msg) => { /* append points and redraw */ })
-  ```
+1. Open front-end in two tabs.
+2. Load same author + blueprint in both tabs.
+3. Switch to `Socket.IO`, draw in tab A, show replication in tab B.
+4. Switch to `STOMP`, repeat replication.
+5. Perform `Create`, `Save/Update`, and `Delete`.
+6. Show terminal with `npm run lint && npm run test && npm run coverage && npm run build`.
 
 ---
 
-## 🧪 Minimum test cases
-- **Initial state**: when selecting a blueprint, the canvas loads points (`GET /api/blueprints/:author/:name`).  
-- **Local drawing**: clicking on the canvas adds points and redraws.  
-- **Multi-tab RT**: with 2 tabs, points are **replicated** almost in real time.  
-- **CRUD**: Create/Save/Delete work and refresh the list and the author's **Total**.
+## Repository structure
+
+```text
+src/
+  App.jsx
+  main.jsx
+  styles.css
+  lib/
+    socketIoClient.js
+    stompClient.js
+  services/
+    blueprintsApi.js
+tests/
+  App.test.jsx
+  setup.js
+eslint.config.js
+vitest.config.js
+```
 
 ---
 
-## 📊 Team deliverables
-1. Front-end code integrated with **CRUD** and **RT** (Socket.IO or STOMP).  
-2. **Short video** (≤ 90s) showing live collaboration and CRUD operations.  
-3. **Team README**: setup, endpoints used, decisions (rooms/topics), and an optional brief Socket.IO vs STOMP comparison.
+## License
 
----
-
-## 🧮 Suggested rubric
-- **Functionality (40%)**: stable RT (join/broadcast), blueprint isolation, operational CRUD.  
-- **Technical quality (30%)**: clean structure, error handling, clear documentation.  
-- **Observability/DX (15%)**: useful logs (connection, events), basic health checks.  
-- **Analysis (15%)**: findings (latency/reconnection) and, when applicable, Socket.IO vs STOMP pros/cons.
-
----
-
-## 🩺 Troubleshooting
-- **Blank screen (front-end)**: check browser console; confirm `@vitejs/plugin-react` is installed and `AppP4.jsx` is in `src/`.  
-- **No broadcast**: both tabs must `join-room` for the **same** blueprint (Socket.IO) or subscribe to the **same topic** (STOMP).  
-- **CORS**: in dev allow `http://localhost:5173`; in prod, **restrict origins**.  
-- **Socket.IO does not connect**: force WebSocket transport `{ transports: ['websocket'] }`.  
-- **STOMP does not receive messages**: verify `brokerURL`/`webSocketFactory` and Spring `/app` and `/topic` prefixes.
-
----
-
-## 🔐 Security (minimum)
-- Payload validation (for example, zod/joi).  
-- Origin restriction in production.  
-- Optional: **JWT** + authorization by blueprint/room.
-
----
-
-## 📄 License
-MIT (or the one defined by the course/team).
+MIT (or your course/team license policy).
