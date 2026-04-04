@@ -1,97 +1,496 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createStompClient, subscribeBlueprint } from './lib/stompClient.js'
 import { createSocket } from './lib/socketIoClient.js'
+import { createBlueprintsApi, summarizePoints } from './services/blueprintsApi.js'
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080' // Spring
-const IO_BASE  = import.meta.env.VITE_IO_BASE  ?? 'http://localhost:3001' // Node/Socket.IO
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080'
+const IO_BASE = import.meta.env.VITE_IO_BASE ?? 'http://localhost:3001'
+const STOMP_BASE = import.meta.env.VITE_STOMP_BASE ?? API_BASE
+
+const CANVAS_WIDTH = 920
+const CANVAS_HEIGHT = 520
+
+const BLUEPRINT_TECH = {
+  none: 'none',
+  socketio: 'socketio',
+  stomp: 'stomp',
+}
+
+const pointKey = (point) => `${point.x}:${point.y}`
+
+const mergePoints = (current, incoming) => {
+  if (!Array.isArray(incoming) || incoming.length === 0) {
+    return current
+  }
+
+  const known = new Set(current.map(pointKey))
+  const fresh = incoming.filter((point) => !known.has(pointKey(point)))
+
+  if (fresh.length === 0) {
+    return current
+  }
+
+  return [...current, ...fresh]
+}
+
+const drawBlueprint = (canvas, points) => {
+  const ctx = canvas?.getContext('2d')
+  if (!ctx) return
+
+  ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+  ctx.fillStyle = '#fdfcf8'
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+
+  ctx.save()
+  ctx.strokeStyle = '#d4cdc0'
+  ctx.lineWidth = 1
+  for (let x = 0; x <= CANVAS_WIDTH; x += 40) {
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, CANVAS_HEIGHT)
+    ctx.stroke()
+  }
+  for (let y = 0; y <= CANVAS_HEIGHT; y += 40) {
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    ctx.lineTo(CANVAS_WIDTH, y)
+    ctx.stroke()
+  }
+  ctx.restore()
+
+  if (!points.length) return
+
+  ctx.save()
+  ctx.strokeStyle = '#0f766e'
+  ctx.lineWidth = 2.5
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  points.forEach((point, index) => {
+    if (index === 0) {
+      ctx.moveTo(point.x, point.y)
+    } else {
+      ctx.lineTo(point.x, point.y)
+    }
+  })
+  ctx.stroke()
+
+  ctx.fillStyle = '#dc2626'
+  points.forEach((point) => {
+    ctx.beginPath()
+    ctx.arc(point.x, point.y, 3.2, 0, 2 * Math.PI)
+    ctx.fill()
+  })
+  ctx.restore()
+}
 
 export default function App() {
-  const [tech, setTech] = useState('stomp')
+  const [tech, setTech] = useState(BLUEPRINT_TECH.none)
   const [author, setAuthor] = useState('juan')
-  const [name, setName] = useState('blueprint-1')
+  const [nameInput, setNameInput] = useState('blueprint-1')
+  const [selectedName, setSelectedName] = useState('')
+  const [points, setPoints] = useState([])
+  const [blueprints, setBlueprints] = useState([])
+  const [isLoadingList, setIsLoadingList] = useState(false)
+  const [isMutating, setIsMutating] = useState(false)
+  const [isLoadingCanvas, setIsLoadingCanvas] = useState(false)
+  const [message, setMessage] = useState('Ready to collaborate.')
+  const [error, setError] = useState('')
+  const [rtStatus, setRtStatus] = useState('Real-time disabled')
+
   const canvasRef = useRef(null)
 
   const stompRef = useRef(null)
   const unsubRef = useRef(null)
   const socketRef = useRef(null)
+  const api = useMemo(() => createBlueprintsApi({ apiBase: API_BASE }), [])
 
-  useEffect(() => {
-    fetch(`${tech==='stomp'?API_BASE:IO_BASE}/api/blueprints/${author}/${name}`)
-      .then(r=>r.json())
-      .then(drawAll)
-  }, [tech, author, name])
+  const activeBlueprintName = selectedName || nameInput.trim()
+  const totalPointsByAuthor = summarizePoints(blueprints)
 
-  function drawAll(bp) {
-    const ctx = canvasRef.current?.getContext('2d')
-    if (!ctx) return
-    ctx.clearRect(0,0,600,400)
-    ctx.beginPath()
-    bp.points.forEach((p,i)=> {
-      if (i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y)
-    })
-    ctx.stroke()
+  const resetRealtime = () => {
+    unsubRef.current?.()
+    unsubRef.current = null
+    stompRef.current?.deactivate?.()
+    stompRef.current = null
+    socketRef.current?.disconnect?.()
+    socketRef.current = null
+  }
+
+  const loadBlueprintList = async () => {
+    if (!author.trim()) return
+
+    setIsLoadingList(true)
+    setError('')
+    try {
+      const list = await api.listByAuthor(author.trim())
+      setBlueprints(list)
+    } catch (err) {
+      setError(`Could not load blueprints: ${err.message}`)
+      setBlueprints([])
+    } finally {
+      setIsLoadingList(false)
+    }
+  }
+
+  const loadBlueprint = async (blueprintName) => {
+    if (!author.trim() || !blueprintName.trim()) return
+
+    setIsLoadingCanvas(true)
+    setError('')
+    try {
+      const blueprint = await api.getByAuthorAndName(author.trim(), blueprintName.trim())
+      setPoints(blueprint.points)
+      setSelectedName(blueprint.name)
+      setNameInput(blueprint.name)
+      setMessage(`Loaded ${blueprint.name} with ${blueprint.points.length} points.`)
+    } catch (err) {
+      setError(`Could not load blueprint: ${err.message}`)
+      setPoints([])
+    } finally {
+      setIsLoadingCanvas(false)
+    }
   }
 
   useEffect(() => {
-    unsubRef.current?.(); unsubRef.current = null
-    stompRef.current?.deactivate?.(); stompRef.current = null
-    socketRef.current?.disconnect?.(); socketRef.current = null
+    drawBlueprint(canvasRef.current, points)
+  }, [points])
 
-    if (tech === 'stomp') {
-      const client = createStompClient(API_BASE)
+  useEffect(() => {
+    drawBlueprint(canvasRef.current, [])
+    if (!author.trim()) return
+
+    setIsLoadingList(true)
+    setError('')
+    api
+      .listByAuthor(author.trim())
+      .then((list) => setBlueprints(list))
+      .catch((err) => {
+        setError(`Could not load blueprints: ${err.message}`)
+        setBlueprints([])
+      })
+      .finally(() => setIsLoadingList(false))
+  }, [author, api])
+
+  useEffect(() => {
+    resetRealtime()
+
+    if (tech === BLUEPRINT_TECH.none) {
+      setRtStatus('Real-time disabled')
+      return undefined
+    }
+
+    if (!author.trim() || !activeBlueprintName) {
+      setRtStatus('Select an author and blueprint to connect')
+      return undefined
+    }
+
+    if (tech === BLUEPRINT_TECH.stomp) {
+      const client = createStompClient(STOMP_BASE)
       stompRef.current = client
+      setRtStatus('Connecting to STOMP...')
+
       client.onConnect = () => {
-        unsubRef.current = subscribeBlueprint(client, author, name, (upd)=> {
-          drawAll({ points: upd.points })
+        setRtStatus(`Connected via STOMP to ${activeBlueprintName}`)
+        unsubRef.current = subscribeBlueprint(client, author.trim(), activeBlueprintName, (update) => {
+          setPoints((prev) => mergePoints(prev, update.points ?? []))
         })
       }
+
+      client.onWebSocketClose = () => {
+        setRtStatus('STOMP connection closed')
+      }
+
+      client.onStompError = (frame) => {
+        setError(`STOMP error: ${frame.headers?.message ?? 'unknown error'}`)
+      }
+
       client.activate()
-    } else {
-      const s = createSocket(IO_BASE)
-      socketRef.current = s
-      const room = `blueprints.${author}.${name}`
-      s.emit('join-room', room)
-      s.on('blueprint-update', (upd)=> drawAll({ points: upd.points }))
     }
+
+    if (tech === BLUEPRINT_TECH.socketio) {
+      const socket = createSocket(IO_BASE)
+      socketRef.current = socket
+      const room = `blueprints.${author.trim()}.${activeBlueprintName}`
+      setRtStatus('Connecting to Socket.IO...')
+
+      socket.on('connect', () => {
+        socket.emit('join-room', room)
+        setRtStatus(`Connected via Socket.IO to ${activeBlueprintName}`)
+      })
+
+      socket.on('blueprint-update', (update) => {
+        setPoints((prev) => mergePoints(prev, update.points ?? []))
+      })
+
+      socket.on('connect_error', (err) => {
+        setError(`Socket.IO error: ${err.message}`)
+      })
+    }
+
     return () => {
-      unsubRef.current?.(); unsubRef.current = null
-      stompRef.current?.deactivate?.()
-      socketRef.current?.disconnect?.()
+      resetRealtime()
     }
-  }, [tech, author, name])
+  }, [tech, author, activeBlueprintName])
 
-  function onClick(e) {
-    const rect = e.target.getBoundingClientRect()
-    const point = { x: Math.round(e.clientX - rect.left), y: Math.round(e.clientY - rect.top) }
+  const emitRealtimePoint = (point) => {
+    if (!author.trim() || !activeBlueprintName) return
 
-    if (tech === 'stomp' && stompRef.current?.connected) {
-      stompRef.current.publish({ destination: '/app/draw', body: JSON.stringify({ author, name, point }) })
-    } else if (tech === 'socketio' && socketRef.current?.connected) {
-      const room = `blueprints.${author}.${name}`
-      socketRef.current.emit('draw-event', { room, author, name, point })
+    if (tech === BLUEPRINT_TECH.stomp && stompRef.current?.connected) {
+      stompRef.current.publish({
+        destination: '/app/draw',
+        body: JSON.stringify({ author: author.trim(), name: activeBlueprintName, point }),
+      })
+    }
+
+    if (tech === BLUEPRINT_TECH.socketio && socketRef.current?.connected) {
+      const room = `blueprints.${author.trim()}.${activeBlueprintName}`
+      socketRef.current.emit('draw-event', { room, author: author.trim(), name: activeBlueprintName, point })
+    }
+  }
+
+  const handleCanvasClick = (event) => {
+    if (!activeBlueprintName) {
+      setError('Select or create a blueprint before drawing.')
+      return
+    }
+
+    setError('')
+    const rect = event.target.getBoundingClientRect()
+    const scaleX = CANVAS_WIDTH / rect.width
+    const scaleY = CANVAS_HEIGHT / rect.height
+    const point = {
+      x: Math.round((event.clientX - rect.left) * scaleX),
+      y: Math.round((event.clientY - rect.top) * scaleY),
+    }
+
+    setPoints((prev) => [...prev, point])
+    emitRealtimePoint(point)
+  }
+
+  const handleCreate = async () => {
+    const nextName = nameInput.trim()
+    if (!author.trim() || !nextName) {
+      setError('Author and blueprint name are required.')
+      return
+    }
+
+    setIsMutating(true)
+    setError('')
+    try {
+      await api.create({ author: author.trim(), name: nextName, points })
+      setSelectedName(nextName)
+      setMessage(`Blueprint ${nextName} created.`)
+      await loadBlueprintList()
+    } catch (err) {
+      setError(`Create failed: ${err.message}`)
+    } finally {
+      setIsMutating(false)
+    }
+  }
+
+  const handleSave = async () => {
+    const targetName = activeBlueprintName
+    if (!author.trim() || !targetName) {
+      setError('Select a blueprint to save changes.')
+      return
+    }
+
+    setIsMutating(true)
+    setError('')
+    try {
+      await api.update(author.trim(), targetName, {
+        author: author.trim(),
+        name: targetName,
+        points,
+      })
+      setMessage(`Blueprint ${targetName} updated with ${points.length} points.`)
+      await loadBlueprintList()
+    } catch (err) {
+      setError(`Update failed: ${err.message}`)
+    } finally {
+      setIsMutating(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    const targetName = activeBlueprintName
+    if (!author.trim() || !targetName) {
+      setError('Select a blueprint to delete.')
+      return
+    }
+
+    setIsMutating(true)
+    setError('')
+    try {
+      await api.remove(author.trim(), targetName)
+      setPoints([])
+      setSelectedName('')
+      setMessage(`Blueprint ${targetName} deleted.`)
+      await loadBlueprintList()
+    } catch (err) {
+      setError(`Delete failed: ${err.message}`)
+    } finally {
+      setIsMutating(false)
+    }
+  }
+
+  const clearCanvas = () => {
+    setPoints([])
+    setMessage('Canvas cleared locally. Save to persist.')
+  }
+
+  const onNameInputBlur = () => {
+    const normalizedName = nameInput.trim()
+    if (normalizedName && normalizedName !== selectedName) {
+      setSelectedName('')
     }
   }
 
   return (
-    <div style={{fontFamily:'Inter, system-ui', padding:16, maxWidth:900}}>
-      <h2>BluePrints RT - Socket.IO vs STOMP</h2>
-      <div style={{display:'flex', gap:8, alignItems:'center', marginBottom:8}}>
-        <label>Technology:</label>
-        <select value={tech} onChange={e=>setTech(e.target.value)}>
-          <option value="stomp">STOMP (Spring)</option>
-          <option value="socketio">Socket.IO (Node)</option>
-        </select>
-        <input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="author"/>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="blueprint"/>
-      </div>
-      <canvas
-        ref={canvasRef}
-        width={600}
-        height={400}
-        style={{border:'1px solid #ddd', borderRadius:12}}
-        onClick={onClick}
-      />
-      <p style={{opacity:.7, marginTop:8}}>Tip: open 2 tabs and draw alternately to see collaboration.</p>
+    <div className="layout-shell">
+      <header className="hero-card">
+        <div>
+          <p className="hero-kicker">Lab P4</p>
+          <h1>Blueprints Real-Time Collaboration Studio</h1>
+          <p className="hero-copy">
+            One front-end for both transports: REST CRUD + Socket.IO + STOMP synchronization.
+          </p>
+        </div>
+        <div className="status-wrap">
+          <span className={`status-chip ${tech === BLUEPRINT_TECH.none ? 'muted' : 'live'}`}>{rtStatus}</span>
+          <span className="status-chip neutral">{`Author total points: ${totalPointsByAuthor}`}</span>
+        </div>
+      </header>
+
+      <section className="workspace-grid">
+        <article className="panel control-panel">
+          <h2>Control center</h2>
+
+          <div className="field-grid two">
+            <label>
+              Author
+              <input
+                className="input"
+                value={author}
+                onChange={(event) => setAuthor(event.target.value)}
+                placeholder="author"
+              />
+            </label>
+            <label>
+              Real-time transport
+              <select
+                className="input"
+                value={tech}
+                onChange={(event) => setTech(event.target.value)}
+              >
+                <option value={BLUEPRINT_TECH.none}>None (local editing)</option>
+                <option value={BLUEPRINT_TECH.socketio}>Socket.IO (Node)</option>
+                <option value={BLUEPRINT_TECH.stomp}>STOMP (Spring)</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="field-grid two">
+            <label>
+              Blueprint name
+              <input
+                className="input"
+                value={nameInput}
+                onBlur={onNameInputBlur}
+                onChange={(event) => setNameInput(event.target.value)}
+                placeholder="blueprint-1"
+              />
+            </label>
+            <label>
+              Active blueprint
+              <input className="input" readOnly value={activeBlueprintName || 'No blueprint selected'} />
+            </label>
+          </div>
+
+          <div className="button-row">
+            <button type="button" className="btn primary" onClick={loadBlueprintList} disabled={isLoadingList}>
+              {isLoadingList ? 'Refreshing...' : 'Refresh list'}
+            </button>
+            <button type="button" className="btn" onClick={handleCreate} disabled={isMutating}>
+              Create
+            </button>
+            <button type="button" className="btn" onClick={handleSave} disabled={isMutating}>
+              Save/Update
+            </button>
+            <button type="button" className="btn danger" onClick={handleDelete} disabled={isMutating}>
+              Delete
+            </button>
+            <button type="button" className="btn ghost" onClick={clearCanvas}>
+              Clear canvas
+            </button>
+          </div>
+
+          <div className="feedback-stack">
+            {error ? <p className="feedback error">{error}</p> : <p className="feedback info">{message}</p>}
+          </div>
+
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Points</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {blueprints.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="empty-cell">
+                      No blueprints found for this author.
+                    </td>
+                  </tr>
+                )}
+                {blueprints.map((blueprint) => {
+                  const selected = blueprint.name === activeBlueprintName
+                  return (
+                    <tr key={blueprint.name} className={selected ? 'row-active' : ''}>
+                      <td>{blueprint.name}</td>
+                      <td>{blueprint.pointCount}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn tiny"
+                          onClick={() => loadBlueprint(blueprint.name)}
+                          disabled={isLoadingCanvas}
+                        >
+                          Open
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article className="panel canvas-panel">
+          <h2>Collaborative canvas</h2>
+          <p className="canvas-helper">
+            Click to draw points. Open the same author and blueprint in two tabs to verify live sync.
+          </p>
+
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            className="blueprint-canvas"
+            onClick={handleCanvasClick}
+          />
+
+          <div className="canvas-stats">
+            <span>{`Current points: ${points.length}`}</span>
+            <span>{`Mode: ${tech === BLUEPRINT_TECH.none ? 'Local only' : 'Live collaboration'}`}</span>
+          </div>
+        </article>
+      </section>
     </div>
   )
 }
