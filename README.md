@@ -9,7 +9,7 @@
 ![STOMP](https://img.shields.io/badge/STOMP-Spring_WebSocket-16a34a?style=for-the-badge&logo=spring&logoColor=white)
 ![Quality](https://img.shields.io/badge/Lint_Test_Build-Passing-f59e0b?style=for-the-badge)
 
-### Build once, collaborate twice: REST CRUD + Socket.IO + STOMP in one polished front-end.
+### Build once, collaborate twice: JWT login + REST CRUD + Socket.IO + STOMP in one polished front-end.
 
 </div>
 
@@ -135,7 +135,7 @@ Create `.env.local`:
 ```bash
 VITE_API_BASE=http://localhost:8080
 VITE_IO_BASE=http://localhost:3001
-VITE_STOMP_BASE=http://localhost:8080
+VITE_STOMP_BASE=http://localhost:8081
 ```
 
 ---
@@ -158,7 +158,13 @@ npm run dev
 
 Open:
 
-- `http://localhost:5173`
+- `http://localhost:5174`
+
+### 3) Integrated login-first flow
+
+- Start JWT app (`arsw-blueprints-api-react-lab`) on `http://localhost:5173`.
+- Log in against security backend (`arsw-blueprints-api-security-lab`) on `http://localhost:8080`.
+- Click **Realtime Lab** in the top navigation to open this app on `http://localhost:5174` with prefilled author.
 
 ---
 
@@ -179,16 +185,18 @@ Create an `images/` directory and add the following high-value captures:
 
 | File name | What to capture |
 |---|---|
-| `01-home-overview.png` | Full page: control panel + realtime selector + canvas |
-| `02-author-list-loaded.png` | Author query with blueprint list and total points |
-| `03-open-blueprint.png` | Selecting one blueprint and rendering canvas points |
-| `04-socketio-sync-tabA-tabB.png` | Two tabs showing Socket.IO replication |
-| `05-stomp-sync-tabA-tabB.png` | Two tabs showing STOMP replication |
-| `06-create-blueprint-success.png` | Create action success message |
-| `07-save-update-success.png` | Save/Update action with changed point count |
-| `08-delete-blueprint-success.png` | Delete action and list refresh |
-| `09-quality-commands-pass.png` | Terminal output: lint, test, coverage, build |
-| `10-sonar-workflow-pass.png` | GitHub Actions + SonarCloud green checks |
+| `00-login-success-jwt.png` | Successful login screen on port 5173 |
+| `01-handoff-to-realtime-link.png` | Realtime Lab navigation link visible after login |
+| `02-home-overview.png` | Full page: control panel + realtime selector + canvas |
+| `03-author-list-loaded.png` | Author query with blueprint list and total points |
+| `04-open-blueprint.png` | Selecting one blueprint and rendering canvas points |
+| `05-socketio-sync-tabA-tabB.png` | Two tabs showing Socket.IO replication |
+| `06-stomp-sync-tabA-tabB.png` | Two tabs showing STOMP replication (port 8081) |
+| `07-create-blueprint-success.png` | Create action success message |
+| `08-save-update-success.png` | Save/Update action with changed point count |
+| `09-delete-blueprint-success.png` | Delete action and list refresh |
+| `10-quality-commands-pass.png` | Terminal output: lint, test, coverage, build |
+| `11-sonar-workflow-pass.png` | GitHub Actions + SonarCloud green checks |
 
 ### Optional gallery block
 
