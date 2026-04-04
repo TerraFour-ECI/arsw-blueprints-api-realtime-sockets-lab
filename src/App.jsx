@@ -5,7 +5,7 @@ import { createBlueprintsApi, summarizePoints } from './services/blueprintsApi.j
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080'
 const IO_BASE = import.meta.env.VITE_IO_BASE ?? 'http://localhost:3001'
-const STOMP_BASE = import.meta.env.VITE_STOMP_BASE ?? API_BASE
+const STOMP_BASE = import.meta.env.VITE_STOMP_BASE ?? 'http://localhost:8081'
 
 const CANVAS_WIDTH = 920
 const CANVAS_HEIGHT = 520
@@ -85,9 +85,14 @@ const drawBlueprint = (canvas, points) => {
 }
 
 export default function App() {
+  const queryParams = new URLSearchParams(window.location.search)
+  const initialAuthor = queryParams.get('author') || 'juan'
+  const initialBlueprint = queryParams.get('name') || 'blueprint-1'
+  const initialTech = queryParams.get('tech')
+
   const [tech, setTech] = useState(BLUEPRINT_TECH.none)
-  const [author, setAuthor] = useState('juan')
-  const [nameInput, setNameInput] = useState('blueprint-1')
+  const [author, setAuthor] = useState(initialAuthor)
+  const [nameInput, setNameInput] = useState(initialBlueprint)
   const [selectedName, setSelectedName] = useState('')
   const [points, setPoints] = useState([])
   const [blueprints, setBlueprints] = useState([])
@@ -346,6 +351,15 @@ export default function App() {
       setSelectedName('')
     }
   }
+
+  useEffect(() => {
+    if (!initialTech) return
+
+    if (Object.values(BLUEPRINT_TECH).includes(initialTech)) {
+      setTech(initialTech)
+      setMessage(`Initialized from login flow with ${initialTech} transport.`)
+    }
+  }, [initialTech])
 
   return (
     <div className="layout-shell">
