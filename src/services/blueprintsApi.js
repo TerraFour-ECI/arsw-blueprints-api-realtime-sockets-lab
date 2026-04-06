@@ -51,12 +51,14 @@ const normalizeBlueprintList = (payload) => {
 }
 
 const requestJson = async (url, init) => {
+  const { headers: inputHeaders = {}, ...restInit } = init || {}
+
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
+      ...inputHeaders,
     },
-    ...init,
+    ...restInit,
   })
 
   const rawText = await response.text()
