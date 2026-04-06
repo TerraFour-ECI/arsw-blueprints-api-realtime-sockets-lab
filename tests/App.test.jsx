@@ -1,7 +1,5 @@
-import React from 'react'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
-import App from '../src/App.jsx'
 import * as stompLib from '../src/lib/stompClient.js'
 import * as socketLib from '../src/lib/socketIoClient.js'
 
