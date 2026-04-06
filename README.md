@@ -279,9 +279,9 @@ npm run build
 - Optional enhancement: authorization by blueprint room/topic ownership.
 
 ### Current implementation status
-- Socket.IO backend: draw payload validation + CORS configuration by env + `/health` endpoint.
-- STOMP backend: draw payload validation + configurable allowed origins.
-- Frontend realtime: JWT token handoff and `Authorization: Bearer <token>` for secured CRUD calls.
+- Socket.IO backend: draw payload validation + CORS env configuration + `/health` endpoint + JWT handshake authorization + room ownership checks.
+- STOMP backend: draw payload validation + configurable allowed origins + JWT authorization on CONNECT/SUBSCRIBE + principal-based author enforcement on draw publish.
+- Frontend realtime: JWT token handoff and Bearer token propagation for secured CRUD plus RT handshakes (Socket.IO auth and STOMP connect headers).
 
 ---
 

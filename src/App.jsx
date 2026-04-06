@@ -111,6 +111,7 @@ export default function App() {
   const unsubRef = useRef(null)
   const socketRef = useRef(null)
   const api = useMemo(() => createBlueprintsApi({ apiBase: API_BASE }), [])
+  const getRtToken = () => localStorage.getItem('rt.jwt')
 
   useEffect(() => {
     if (initialToken) {
@@ -205,7 +206,7 @@ export default function App() {
     }
 
     if (tech === BLUEPRINT_TECH.stomp) {
-      const client = createStompClient(STOMP_BASE)
+      const client = createStompClient(STOMP_BASE, getRtToken())
       stompRef.current = client
       setRtStatus('Connecting to STOMP...')
 
@@ -228,7 +229,7 @@ export default function App() {
     }
 
     if (tech === BLUEPRINT_TECH.socketio) {
-      const socket = createSocket(IO_BASE)
+      const socket = createSocket(IO_BASE, getRtToken())
       socketRef.current = socket
       const room = `blueprints.${author.trim()}.${activeBlueprintName}`
       setRtStatus('Connecting to Socket.IO...')
