@@ -96,6 +96,7 @@ export default function App() {
   const [nameInput, setNameInput] = useState(initialBlueprint)
   const [selectedName, setSelectedName] = useState('')
   const [points, setPoints] = useState([])
+  const [persistedPointCount, setPersistedPointCount] = useState(0)
   const [blueprints, setBlueprints] = useState([])
   const [isLoadingList, setIsLoadingList] = useState(false)
   const [isMutating, setIsMutating] = useState(false)
@@ -158,6 +159,7 @@ export default function App() {
     try {
       const blueprint = await api.getByAuthorAndName(author.trim(), blueprintName.trim())
       setPoints(blueprint.points)
+      setPersistedPointCount(blueprint.points.length)
       setSelectedName(blueprint.name)
       setNameInput(blueprint.name)
       setMessage(`Loaded ${blueprint.name} with ${blueprint.points.length} points.`)
@@ -297,6 +299,7 @@ export default function App() {
     try {
       await api.create({ author: author.trim(), name: nextName, points })
       setSelectedName(nextName)
+      setPersistedPointCount(points.length)
       setMessage(`Blueprint ${nextName} created.`)
       await loadBlueprintList()
     } catch (err) {
@@ -316,11 +319,17 @@ export default function App() {
     setIsMutating(true)
     setError('')
     try {
-      await api.update(author.trim(), targetName, {
-        author: author.trim(),
-        name: targetName,
-        points,
-      })
+      const pendingPoints = points.slice(persistedPointCount)
+      if (!pendingPoints.length) {
+        setMessage('No new points to persist.')
+        return
+      }
+
+      for (const point of pendingPoints) {
+        await api.addPoint(author.trim(), targetName, point)
+      }
+
+      setPersistedPointCount(points.length)
       setMessage(`Blueprint ${targetName} updated with ${points.length} points.`)
       await loadBlueprintList()
     } catch (err) {

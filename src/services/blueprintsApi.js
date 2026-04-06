@@ -128,19 +128,25 @@ export const createBlueprintsApi = ({ apiBase }) => {
     },
 
     async update(author, name, blueprint) {
-      const payload = await requestJson(
-        pathWithApi(base, `/blueprints/${encodeURIComponent(author)}/${encodeURIComponent(name)}`),
+      const allPoints = ensurePoints(blueprint.points)
+      const lastPoint = allPoints.at(-1)
+      if (!lastPoint) {
+        return normalizeBlueprint(blueprint)
+      }
+
+      await this.addPoint(author, name, lastPoint)
+      return normalizeBlueprint(blueprint)
+    },
+
+    async addPoint(author, name, point) {
+      await requestJson(
+        pathWithApi(base, `/blueprints/${encodeURIComponent(author)}/${encodeURIComponent(name)}/points`),
         {
           method: 'PUT',
           headers: getAuthHeaders(),
-          body: JSON.stringify({
-            author: blueprint.author,
-            name: blueprint.name,
-            points: ensurePoints(blueprint.points),
-          }),
+          body: JSON.stringify({ x: Number(point.x), y: Number(point.y) }),
         },
       )
-      return normalizeBlueprint(payload)
     },
 
     async remove(author, name) {
