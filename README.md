@@ -80,12 +80,12 @@ flowchart LR
     end
 
     JWTUI -->|1. Login + JWT issue| SEC
-    JWTUI -->|2. Token handoff (query param)| RTUI
-    RTUI -->|3. Authenticated CRUD\nGET/POST/PUT/DELETE| SEC
-    RTUI -->|4A. join-room/draw-event| IO
-    IO -->|5A. blueprint-update| RTUI
-    RTUI -->|4B. SEND /app/draw| ST
-    ST -->|5B. MESSAGE /topic/blueprints.author.name| RTUI
+    JWTUI -->|2. Token handoff query param| RTUI
+    RTUI -->|3. Authenticated CRUD GET POST PUT DELETE| SEC
+    RTUI -->|4A. join room draw event| IO
+    IO -->|5A. blueprint update| RTUI
+    RTUI -->|4B. send app draw| ST
+    ST -->|5B. message topic blueprints author name| RTUI
 
     classDef ui fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e;
     classDef api fill:#ecfccb,stroke:#65a30d,stroke-width:2px,color:#365314;
