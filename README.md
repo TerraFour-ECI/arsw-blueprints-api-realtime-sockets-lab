@@ -76,7 +76,8 @@ flowchart LR
 
     subgraph C[Realtime Backends]
       IO[Socket.IO Backend\nblueprints-example-backend-socketio-node\n:3001]
-      ST[STOMP Backend\nblueprints-example-backend-stomp\n:8081 integrated]\n+    end
+      ST[STOMP Backend\nblueprints-example-backend-stomp\n:8081 integrated]
+    end
 
     JWTUI -->|1. Login + JWT issue| SEC
     JWTUI -->|2. Token handoff (query param)| RTUI
