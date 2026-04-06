@@ -1,4 +1,4 @@
-# BluePrints RT Lab P4 - Ultimate Dual-Transport Collaboration Guide
+# 🚀 BluePrints RT Lab P4 - Final Showcase (JWT + Socket.IO + STOMP)
 
 <div align="center">
 
@@ -7,130 +7,41 @@
 ![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-111827?style=for-the-badge&logo=socket.io&logoColor=white)
 ![STOMP](https://img.shields.io/badge/STOMP-Spring_WebSocket-16a34a?style=for-the-badge&logo=spring&logoColor=white)
-![Quality](https://img.shields.io/badge/Lint_Test_Build-Passing-f59e0b?style=for-the-badge)
+![JWT](https://img.shields.io/badge/Auth-JWT-f97316?style=for-the-badge)
 
-### Build once, collaborate twice: JWT login + REST CRUD + Socket.IO + STOMP in one polished front-end.
+### 🎯 One integrated flow: Login first, then collaborative realtime drawing with two transport protocols.
 
 </div>
 
 ---
 
-## Table of contents
+## ✨ What this repository delivers
 
-- [Overview](#overview)
-- [Lab goals](#lab-goals)
-- [Feature checklist](#feature-checklist)
-- [Architecture](#architecture)
-- [API contracts](#api-contracts)
-- [Environment setup](#environment-setup)
-- [Run instructions](#run-instructions)
-- [Validation commands](#validation-commands)
-- [Screenshot evidence kit](#screenshot-evidence-kit)
-- [Demo script](#demo-script)
-- [Project structure](#project-structure)
+This project is the **Part 4 frontend** for BluePrints realtime collaboration, integrated with:
+
+- 🔐 **JWT-secured API** (login-first flow from port `5173`)
+- 🧩 **REST CRUD** operations against the secured backend (`8080`)
+- ⚡ **Socket.IO** realtime collaboration (`3001`)
+- 📡 **STOMP/WebSocket** realtime collaboration (`8081`)
+- 🖼️ polished interface + evidence-ready workflow
 
 ---
 
-## Overview
-
-This repository is the front-end implementation for P4 BluePrints real-time collaboration.
-It combines:
-
-- **Part 3 CRUD API integration**
-- **Socket.IO live synchronization (Node backend)**
-- **STOMP live synchronization (Spring backend)**
-- **author-scoped blueprint rooms/topics**
-- **clean, responsive, demo-ready UI**
-
----
-
-## Lab goals
-
-1. Load and manage blueprints through REST.
-2. Draw points on canvas incrementally.
-3. Synchronize drawing in real time across multiple tabs.
-4. Support both realtime backends through a transport selector.
-5. Keep code quality and CI verification reproducible.
-
----
-
-## Feature checklist
-
-### CRUD (REST)
-
-- `GET /api/blueprints?author=:author`
-- `GET /api/blueprints/:author/:name`
-- `POST /api/blueprints`
-- `PUT /api/blueprints/:author/:name`
-- `DELETE /api/blueprints/:author/:name`
-
-### Realtime
-
-- **Socket.IO**: room join + point broadcast (`join-room`, `draw-event`, `blueprint-update`)
-- **STOMP**: publish + topic subscription (`/app/draw`, `/topic/blueprints.{author}.{name}`)
-- **Mode switch**: None / Socket.IO / STOMP
-
----
-
-## Architecture
+## 🧭 Final architecture
 
 ```mermaid
 flowchart LR
-  UI[React + Vite UI] --> CRUD[REST API]
-  UI --> MODE{Realtime mode}
-  MODE -->|None| LOCAL[Local canvas draw]
-  MODE -->|Socket.IO| NODE[Node Socket.IO backend :3001]
-  MODE -->|STOMP| SPRING[Spring STOMP backend :8080]
-  NODE --> R1[(Room blueprints.author.name)]
-  SPRING --> R2[(Topic topic.blueprints.author.name)]
-```
-
-### Draw synchronization sequence
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant A as Browser Tab A
-  participant B as Browser Tab B
-  participant F as Frontend App
-  participant R as Realtime Backend
-
-  A->>F: Click canvas
-  F->>F: Append point locally
-  F->>R: Emit or publish draw event
-  R-->>F: Broadcast blueprint update
-  F-->>B: UI repaint with merged points
+  LOGIN["JWT Frontend :5173"] -->|"Open Realtime Lab + token handoff"| RTUI["Realtime Frontend :5174"]
+  RTUI -->|"CRUD /api/blueprints"| SEC["Security API :8080"]
+  RTUI -->|"Socket.IO events"| IO["Socket.IO Backend :3001"]
+  RTUI -->|"STOMP publish/subscribe"| STOMP["STOMP Backend :8081"]
 ```
 
 ---
 
-## API contracts
+## 🔐 Environment setup
 
-### Room/topic naming convention
-
-- `blueprints.{author}.{name}`
-
-### Point payload
-
-```json
-{ "x": 120, "y": 90 }
-```
-
-### Realtime update payload
-
-```json
-{
-  "author": "juan",
-  "name": "blueprint-1",
-  "points": [{ "x": 120, "y": 90 }]
-}
-```
-
----
-
-## Environment setup
-
-Create `.env.local`:
+Create `.env.local` in this repo:
 
 ```bash
 VITE_API_BASE=http://localhost:8080
@@ -140,36 +51,82 @@ VITE_STOMP_BASE=http://localhost:8081
 
 ---
 
-## Run instructions
+## ▶️ Run flow
 
-### 1) Start realtime backends
-
-- Socket.IO backend:
-  https://github.com/TerraFour-ECI/blueprints-example-backend-socketio-node
-- STOMP backend:
-  https://github.com/TerraFour-ECI/blueprints-example-backend-stomp
-
-### 2) Start this front-end
-
-```bash
-npm install
-npm run dev
-```
-
-Open:
-
-- `http://localhost:5174`
-
-### 3) Integrated login-first flow
-
-- Start JWT app (`arsw-blueprints-api-react-lab`) on `http://localhost:5173`.
-- Log in against security backend (`arsw-blueprints-api-security-lab`) on `http://localhost:8080`.
-- Click **Realtime Lab** in the top navigation to open this app on `http://localhost:5174` with prefilled author.
-- The handoff includes the JWT so CRUD requests from `5174` are authenticated against the secured API.
+1. Start security backend on `8080`.
+2. Start JWT frontend (`arsw-blueprints-api-react-lab`) on `5173`.
+3. Login and click **Realtime Lab** in the navbar.
+4. Realtime app opens on `5174` with author + JWT handoff.
+5. Use Socket.IO or STOMP mode and verify collaboration.
 
 ---
 
-## Validation commands
+## 🎬 Demo video
+
+- **Watch full lab demo:** [demo-blueprints-realtime-socketio-stomp.mp4](demo-blueprints-realtime-socketio-stomp.mp4)
+
+---
+
+## 📸 Evidence gallery (real captures)
+
+### 00 - JWT login success
+Shows the successful authentication screen before opening realtime.
+
+![00-login-success-jwt](images/00-login-success-jwt.png)
+
+### 01 - Handoff link visible after login
+Shows the **Realtime Lab** access point from the authenticated app.
+
+![01-handoff-to-realtime-link](images/01-handoff-to-realtime-link.png)
+
+### 02 - Realtime home overview
+Main dashboard with control panel + transport selector + canvas.
+
+![02-home-overview](images/02-home-overview.png)
+
+### 03 - Author list loaded
+Author query resolved and blueprint list displayed with point totals.
+
+![03-author-list-loaded](images/03-author-list-loaded.png)
+
+### 04 - Blueprint opened in canvas
+Selected blueprint rendered in canvas with current point count.
+
+![04-open-blueprint](images/04-open-blueprint.png)
+
+### 05 - Socket.IO realtime replication
+Two-tab collaboration evidence using Socket.IO transport.
+
+![05-socketio-sync-tabA-tabB](images/05-socketio-sync-tabA-tabB.png)
+
+### 06 - STOMP realtime replication
+Two-tab collaboration evidence using STOMP transport.
+
+![06-stomp-sync-tabA-tabB](images/06-stomp-sync-tabA-tabB.png)
+
+### 07 - Blueprint creation success
+Successful `Create` operation in secured CRUD flow.
+
+![07-create-blueprint-success](images/07-create-blueprint-success.png)
+
+### 08 - Save/Update success
+Successful point persistence (`PUT /points`) with updated totals.
+
+![08-save-update-success](images/08-save-update-success.png)
+
+### 09 - Delete success
+Successful deletion from secured backend and refreshed list.
+
+![09-delete-blueprint-success](images/09-delete-blueprint-success.png)
+
+### 10 - Quality commands pass
+Local quality checks and build evidence.
+
+![10-quality-commands-pass](images/10-quality-commands-pass.png)
+
+---
+
+## ✅ Quality commands
 
 ```bash
 npm run lint
@@ -180,50 +137,7 @@ npm run build
 
 ---
 
-## Screenshot evidence kit
-
-Create an `images/` directory and add the following high-value captures:
-
-| File name | What to capture |
-|---|---|
-| `00-login-success-jwt.png` | Successful login screen on port 5173 |
-| `01-handoff-to-realtime-link.png` | Realtime Lab navigation link visible after login |
-| `02-home-overview.png` | Full page: control panel + realtime selector + canvas |
-| `03-author-list-loaded.png` | Author query with blueprint list and total points |
-| `04-open-blueprint.png` | Selecting one blueprint and rendering canvas points |
-| `05-socketio-sync-tabA-tabB.png` | Two tabs showing Socket.IO replication |
-| `06-stomp-sync-tabA-tabB.png` | Two tabs showing STOMP replication (port 8081) |
-| `07-create-blueprint-success.png` | Create action success message |
-| `08-save-update-success.png` | Save/Update action with changed point count |
-| `09-delete-blueprint-success.png` | Delete action and list refresh |
-| `10-quality-commands-pass.png` | Terminal output: lint, test, coverage, build |
-| `11-sonar-workflow-pass.png` | GitHub Actions + SonarCloud green checks |
-
-### Optional gallery block
-
-```md
-## Evidence Gallery
-
-![Overview](images/01-home-overview.png)
-![Socket.IO sync](images/04-socketio-sync-tabA-tabB.png)
-![STOMP sync](images/05-stomp-sync-tabA-tabB.png)
-![Quality checks](images/09-quality-commands-pass.png)
-```
-
----
-
-## Demo script
-
-1. Open two tabs with same author and blueprint.
-2. Draw with Socket.IO mode and show instant replication.
-3. Switch to STOMP mode and repeat replication.
-4. Create new blueprint, add points, save update.
-5. Delete blueprint and verify list refresh.
-6. Show passing quality commands in terminal.
-
----
-
-## Project structure
+## 📂 Project map
 
 ```text
 src/
@@ -244,6 +158,6 @@ vitest.config.js
 
 ---
 
-## License
+## 📄 License
 
 MIT [LICENSE](LICENSE)
