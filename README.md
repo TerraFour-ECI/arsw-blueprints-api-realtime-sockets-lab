@@ -271,6 +271,21 @@ npm run build
 
 ---
 
+## 🔬 Security Test Evidence (Automated)
+
+To strengthen review confidence, realtime authorization is also validated with automated tests:
+
+- **Socket.IO backend tests** (`npm test` in `blueprints-example-backend-socketio-node`):
+  - valid JWT accepted,
+  - invalid JWT rejected,
+  - foreign-author room access rejected.
+- **STOMP backend tests** (`mvn clean test` in `blueprints-example-backend-stomp`):
+  - CONNECT token validation,
+  - subscription authorization by topic/author,
+  - publish authorization using authenticated principal.
+
+---
+
 ## 🔐 Security Minimums
 
 - Payload validation for draw events and CRUD inputs (recommended via zod/joi or backend validators).
