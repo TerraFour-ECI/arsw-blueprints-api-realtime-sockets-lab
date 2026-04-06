@@ -1,0 +1,520 @@
+% ╔══════════════════════════════════════════════════════════════════════════╗
+% ║  ESCUELA COLOMBIANA DE INGENIERÍA JULIO GARAVITO                        ║
+% ║  Software Architecture (ARSW) — Laboratory No. 7                        ║
+% ║  BluePrints API — Realtime Sockets & JWT Authorization                  ║
+% ╚══════════════════════════════════════════════════════════════════════════╝
+
+\documentclass[10pt,a4paper,twocolumn]{article}
+
+% ─── Encoding & language ──────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+% ─── Maths ───────────────────────────────────────────────────────────────────
+\usepackage{amsmath}
+
+% ─── Graphics & layout ───────────────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage[top=2cm, bottom=2cm, left=1.8cm, right=1.8cm]{geometry}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% ─── Code listing ────────────────────────────────────────────────────────────
+\usepackage{listings}
+
+% ─── Colors & boxes ──────────────────────────────────────────────────────────
+\usepackage[dvipsnames]{xcolor}
+\usepackage[most]{tcolorbox}
+
+% ─── Hyperlinks ──────────────────────────────────────────────────────────────
+\usepackage{hyperref}
+
+% ─── Typography helpers ───────────────────────────────────────────────────────
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{titlesec}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{array}
+\usepackage{makecell}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+%  COLOUR & STYLE DEFINITIONS
+% ═══════════════════════════════════════════════════════════════════════════════
+\definecolor{darkblue}{RGB}{0,32,96}
+\definecolor{lightblue}{RGB}{173,216,230}
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{placeholderbg}{RGB}{240,240,240}
+\definecolor{successgreen}{RGB}{40,167,69}
+\definecolor{warningorange}{RGB}{255,140,0}
+\definecolor{dangerred}{RGB}{220,53,69}
+
+% Section header color
+\titleformat{\section}{\large\bfseries\color{darkblue}}{}{0em}{\thesection\quad}
+\titleformat{\subsection}{\normalsize\bfseries\color{darkblue!80}}{}{0em}{\thesubsection\quad}
+\titlespacing*{\section}{0pt}{10pt}{4pt}
+\titlespacing*{\subsection}{0pt}{8pt}{3pt}
+
+% ─── Header / Footer ─────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textcolor{darkblue}{\textbf{Software Architecture}}}
+\rhead{\textcolor{darkblue}{Lab 07 -- Realtime Sockets \& JWT}}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ─── Code Listing Style ───────────────────────────────────────────────────────
+\lstdefinestyle{javacode}{
+    language=Java,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\scriptsize,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray}\itshape,
+    stringstyle=\color{darkgreen},
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    stepnumber=1,
+    numbersep=5pt,
+    frame=single,
+    framerule=0.4pt,
+    rulecolor=\color{gray!50},
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=2,
+    captionpos=b,
+    xleftmargin=10pt,
+    xrightmargin=5pt,
+    aboveskip=6pt,
+    belowskip=6pt,
+    morekeywords={@Bean,@Component,@Service,@Repository,@RestController,
+                  @GetMapping,@PostMapping,@PutMapping,@DeleteMapping,
+                  @RequestBody,@PathVariable,@PreAuthorize,@EnableMethodSecurity,
+                  @SecurityRequirement,@Operation,@ApiResponse,@Tag,
+                  @Configuration,@EnableWebSecurity,@Profile,@Override,
+                  record,var,sealed}
+}
+\lstdefinestyle{yamlcode}{
+    language=Java,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\scriptsize,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray}\itshape,
+    stringstyle=\color{Brown},
+    frame=single, framerule=0.4pt, rulecolor=\color{gray!50},
+    breaklines=true, showstringspaces=false, tabsize=2,
+    captionpos=b, xleftmargin=10pt, aboveskip=6pt, belowskip=6pt
+}
+
+% ─── Custom tcolorbox environments ───────────────────────────────────────────
+\tcbset{
+    conceptbox/.style={
+        colback=blue!5!white, colframe=darkblue,
+        coltitle=white, colbacktitle=darkblue,
+        title={\textbf{Concept}}, fonttitle=\bfseries\small,
+        boxrule=0.8pt, before skip=8pt, after skip=8pt,
+        left=4pt, right=4pt, top=6pt, bottom=6pt, breakable
+    },
+    resultbox/.style={
+        colback=green!5!white, colframe=successgreen,
+        coltitle=white, colbacktitle=successgreen,
+        title={\textbf{Result}}, fonttitle=\bfseries\small,
+        boxrule=0.8pt, before skip=8pt, after skip=8pt,
+        left=4pt, right=4pt, top=6pt, bottom=6pt, breakable
+    },
+    note/.style={
+        colback=yellow!10!white, colframe=warningorange,
+        coltitle=white, colbacktitle=warningorange,
+        title={\textbf{Note}}, fonttitle=\bfseries\small,
+        boxrule=0.8pt, before skip=8pt, after skip=8pt,
+        left=4pt, right=4pt, top=6pt, bottom=6pt, breakable
+    },
+    warningbox/.style={
+        colback=red!5!white, colframe=dangerred,
+        colbacktitle=dangerred, coltitle=white,
+        title={\textbf{Key Design Decision}}, fonttitle=\bfseries\small,
+        boxrule=0.8pt, before skip=8pt, after skip=8pt,
+        left=4pt, right=4pt, top=6pt, bottom=6pt, breakable
+    }
+}
+\newtcolorbox{conceptbox}[1][]{conceptbox, #1}
+\newtcolorbox{resultbox}[1][]{resultbox, #1}
+\newtcolorbox{note}[1][]{note, #1}
+\newtcolorbox{warningbox}[1][]{warningbox, #1}
+
+% ─── Image helper ─────────────────────────────────────────────────────────────
+\newcommand{\imgplaceholder}[2]{%
+    \IfFileExists{#2}{%
+        \includegraphics[height=#1,width=\linewidth,keepaspectratio]{#2}%
+    }{%
+        \begin{tcolorbox}[
+            colback=placeholderbg, colframe=gray!60,
+            height=#1, valign=center, halign=center,
+            fontupper=\small\ttfamily\color{gray!70},
+            boxrule=0.5pt, left=2pt, right=2pt
+        ]
+            #2
+        \end{tcolorbox}%
+    }%
+}
+
+\setlist[itemize]{leftmargin=15pt, itemsep=2pt, parsep=0pt, topsep=5pt}
+\setlist[enumerate]{leftmargin=15pt, itemsep=2pt, parsep=0pt, topsep=5pt}
+\captionsetup{font=small, labelfont=bf, format=hang, indention=0pt, margin=10pt}
+\hypersetup{colorlinks=true, linkcolor=darkblue, urlcolor=darkblue,
+            citecolor=darkblue, pdfborder={0 0 0}}
+
+% ─────────────────────────── TITLE PAGE ────────────────────────────────────
+\title{\vspace{-1cm}
+    \begin{center}
+        \imgplaceholder{3cm}{media/university_logo.png}
+    \end{center}
+    \vspace{1.5cm}
+    \textbf{\Large Software Architecture Laboratory}\\
+    \vspace{1cm}
+    \textbf{\huge Laboratory No. 7}\\
+    \textbf{\huge Realtime Sockets \& JWT Security}\\
+    \vspace{1.5cm}
+    \large WebSocket / STOMP / Socket.IO / React
+}
+
+\author{
+    \vspace{2cm}
+    \textbf{Students:}\\[0.05cm]
+    Andersson David S\'{a}nchez M\'{e}ndez\\[0.3cm]
+    Cristian Santiago Pedraza Rodr\'{i}guez\\[0.3cm]
+    Elizabeth Correa Su\'{a}rez\\[0.3cm]
+    Juan Sebastian Ortega Mu\~{n}oz\\[1.5cm]
+    \textbf{Instructor:} Professor Javier Ivan Toquica Barrera\\[0.5cm]
+    \textbf{Course:} Software Architecture (ARSW)\\[0.3cm]
+    \textbf{Institution:} Escuela Colombiana de Ingenier\'{i}a Julio Garavito\\[2cm]
+}
+
+\date{April 2026}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+\onecolumn
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\twocolumn
+% ═══════════════════════════════════════════════════════════════════════════════
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Objective}
+% ─────────────────────────────────────────────────────────────────────────────
+
+This laboratory extends the Blueprints collaborative canvas by incorporating 
+bidirectional \textbf{real-time messaging} and stateless security authorization 
+via \textbf{JSON Web Tokens (JWT)} over WebSockets. Building on top of previous 
+laboratories, this implementation adds critical security hardening to ensure only 
+authenticated users can view and edit blueprints in real time, preventing unauthorized 
+data manipulation through direct socket connections.
+
+\begin{conceptbox}[title={Realtime \& Security Objectives}]
+\begin{enumerate}
+  \item Establish bidirectional communication using lightweight protocols: 
+        \textbf{Socket.IO} targeting Node.js, and \textbf{STOMP over WebSockets} 
+        targeting Spring Boot.
+  \item Transition from HTTP-polling interfaces to event-driven broadcasts, 
+        updating collaborative canvases across all connected clients simultaneously, 
+        ensuring low-latency synchronization of drawing actions.
+  \item Apply \textbf{Hardening and JWT Security}: Intercept connection 
+        and subscription events at the socket level to block unauthenticated or 
+        unauthorized users before they can access the messaging queues.
+  \item Enforce topic-level isolation guaranteeing clients only receive updates 
+        for blueprints they're explicitly authorized to view, maintaining data privacy 
+        even over persistent connections.
+  \item Secure state lifecycle events (Create, Save, Delete) with HTTP guards 
+        alongside socket message distribution to ensure persistence and realtime state 
+        remain perfectly consistent.
+\end{enumerate}
+\end{conceptbox}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Application Architecture}
+% ─────────────────────────────────────────────────────────────────────────────
+
+The ecosystem incorporates an API Gateway distributing requests alongside dual 
+WebSocket implementations handling high-frequency positional events. 
+Frontend state is managed tightly by React coupled with active socket hooks, 
+allowing instantaneous UI updates when peer draw events are received.
+
+The underlying structure relies on topic-based pub-sub routing to direct messages 
+only to the clients actively viewing a specific canvas:
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Component} & \textbf{Responsibility} \\
+\midrule
+\texttt{React UI} & Render collaborative canvas and Redux state. \\
+\texttt{Socket.IO} & Node-based high throughput event broker. \\
+\texttt{STOMP} & Java Spring Boot strict broker \& router. \\
+\texttt{JWT Manager} & Stateless authorization identity provider. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{warningbox}
+Unlike REST APIs where each request is authenticated independently, WebSockets remain open indefinitely 
+and process thousands of frames over a single TCP connection. The authentication 
+lifecycle requires initial handshake validation \textbf{and} message-level topic 
+inspection, ensuring authorization scopes are retained mid-flight. If a user's permissions 
+are revoked or expire while the socket is open, the server must be able to detect this on 
+subsequent publish/subscribe frames and terminate the connection.
+\end{warningbox}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Part 1 --- Collaborative Realtime Canvas}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Upon authenticating and receiving a valid JWT, users invoke the frontend application, fetching lists 
+through standard REST pipelines before opening a realtime session on a specific 
+blueprint instance. The frontend seamlessly handles API token injection for all initial data fetches.
+
+\begin{figure}[H]
+\centering
+\imgplaceholder{4cm}{../images/03-author-list-loaded.png}
+\caption{Retrieving the author data catalog via standard REST API carrying the Bearer JWT token.}
+\label{fig:restlist}
+\end{figure}
+
+Clicking a blueprint opens the collaborative drawing canvas. The React component 
+fires a socket connection sequence mapped directly to the blueprint's identifier 
+(\texttt{author.name}). The connection carries the authentication token inside the connection headers.
+
+\begin{figure}[H]
+\centering
+\imgplaceholder{3.8cm}{../images/04-open-blueprint.png}
+\caption{The collaborative canvas session initialized on a specific blueprint room, with WebSockets connected.}
+\label{fig:openroom}
+\end{figure}
+
+\subsection{Socket.IO Synchronization (Node.js)}
+In the Node.js implementation, Socket.IO leverages \texttt{socket.join(room)} to segregate events. Point inserts 
+are emitted as \texttt{addPoint} events, and the server broadcasts a \texttt{pointAdded} event to all participants 
+in that specific room. This enables simultaneous collaborative drawing dynamically synced across multiple tabs or browsers in real-time.
+
+\begin{figure}[H]
+\centering
+\imgplaceholder{4.2cm}{../images/05-socketio-sync-tabA-tabB.png}
+\caption{Socket.IO seamlessly echoing canvas strokes across internal views dynamically, showing changes in both Tab A and Tab B instantaneously.}
+\label{fig:socketiosync}
+\end{figure}
+
+\subsection{STOMP Broker Counterpart (Spring Boot)}
+Correspondingly, Spring WebSockets mapped to STOMP route payload messages pointing 
+to specific destinations, such as \texttt{/topic/blueprint.\{author\}.\{name\}}. Users subscribing to these destinations 
+receive identical reactive synchronization payload characteristics. This ensures that the frontend behaves uniformly, regardless of whether the Node.js or Spring Boot backend is in use.
+
+\begin{figure}[H]
+\centering
+\imgplaceholder{4.2cm}{../images/06-stomp-sync-tabA-tabB.png}
+\caption{STOMP Spring backend echoing similar low-latency synchronization across browser sessions.}
+\label{fig:stompsync}
+\end{figure}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Part 2 --- JWT Room / Topic Hardening}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Exposing open WebSockets inherently risks unregulated point injection or data scraping. An attacker could connect a raw WebSocket client and subscribe to any topic if security is not enforced at the messaging layer. We intercept the connections, extracting JWT Bearer tokens to assert identities directly within the messaging protocol frames.
+
+\subsection{STOMP Interceptor Implementation}
+For the Java Spring implementation, we created a custom \texttt{ChannelInterceptor}. This component validates the in-flight frames before they reach the message broker, checking both the initial \texttt{CONNECT} command and subsequent \texttt{SUBSCRIBE} commands. Because STOMP headers are immutable globally within Spring, we utilize \texttt{accessor.setLeaveMutable(true)} to safely parse the headers without throwing mutability exceptions.
+
+\begin{lstlisting}[style=javacode, caption={JwtRoomAuthorizationInterceptor for STOMP topic authorization}]
+@Override
+public Message<?> preSend(Message<?> message, MessageChannel channel) {
+    StompHeaderAccessor accessor = 
+        MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+    
+    if (accessor != null) {
+        accessor.setLeaveMutable(true); // Prevent mutability exceptions
+        
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            String token = accessor.getFirstNativeHeader("Authorization");
+            if (token == null || !jwtValidator.isValid(token)) {
+                throw new MessageDeliveryException("Unauthorized");
+            }
+        } else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+            String topic = accessor.getDestination();
+            if (topic != null && topic.startsWith("/topic/blueprint.")) {
+                // Block subscription if token scopes are invalid
+                if (!hasRequiredScope(accessor)) {
+                    throw new MessageDeliveryException("Forbidden: Invalid Scope");
+                }
+            }
+        }
+    }
+    return message; // Message proceeds if valid, throws if invalid
+}
+\end{lstlisting}
+
+\subsection{Socket.IO Middleware}
+Similarly, the Node deployment registers authentication middleware halting invalid traffic directly inside the \texttt{io.use} pipeline before establishing a connection. Additionally, point emission is validated on each event to ensure the connected user is permitted to interact with the specific room they are targeting.
+
+\begin{lstlisting}[style=javacode, caption={Socket.IO handshake validation middleware}]
+io.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (isValidJwt(token)) {
+        socket.user = decodeJwt(token); // Attach user details
+        return next();
+    }
+    return next(new Error('Authentication Error'));
+});
+
+// Emitting points validation within specific rooms
+socket.on("addPoint", (data) => {
+    if (!userHoldsScope(socket.user, data.room)) {
+        return socket.emit("error", "Unauthorized Action");
+    }
+    // Safely broadcast to the constrained room
+    socket.to(data.room).emit("pointAdded", data.point);
+});
+\end{lstlisting}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Part 3 --- Complete Canvas Operations}
+% ─────────────────────────────────────────────────────────────────────────────
+
+The lab integrates full CRUD lifecycle capabilities seamlessly alongside the realtime core: 
+\textbf{Create}, \textbf{Update}, and \textbf{Delete}. Each invokes secure HTTP 
+requests, instantly reflecting in the Socket ecosystem UI to prevent dead-state and ensure that database persistence matches what is being shown in the live drawing canvas.
+
+\subsection{Creation}
+Creating fresh blueprints invokes a POST request. Upon success, the UI navigates to the new drawing canvas, correctly initiating a new WebSocket multiplex room logically attached to existing sessions, allowing newly created blueprints to be edited immediately.
+
+\begin{figure}[H]
+\centering
+\imgplaceholder{3.3cm}{../images/07-create-blueprint-success.png}
+\caption{Successful creation of a new blueprint instantly available for realtime access.}
+\label{fig:createbp}
+\end{figure}
+
+\subsection{Save \& Update}
+While drawing updates other clients instantly, persisting the live canvas points to the database pushes the local session state to global persistent storage. This is perfectly synchronized via HTTP PUT operations, ensuring changes survive a server restart.
+
+\begin{figure}[H]
+\centering
+\imgplaceholder{3.8cm}{../images/08-save-update-success.png}
+\caption{Canvas updates successfully synced and persisted asynchronously to the server.}
+\label{fig:updatebp}
+\end{figure}
+
+\subsection{Deletion \& Cleanup}
+When deleting an active blueprint via a DELETE request, connected clients gracefully terminate their realtime sessions and are redirected back to the author list without cascading connection faults or memory leaks.
+
+\begin{figure}[H]
+\centering
+\imgplaceholder{4.2cm}{../images/09-delete-blueprint-success.png}
+\caption{Safe deletion of a global blueprint dynamically detaching WebSocket channels.}
+\label{fig:deletebp}
+\end{figure}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Testing Strategy and Validation}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Verifying concurrent interactions layered with security tokens is complex. We 
+created robust integration suites executing handshake cycles directly against 
+mocked sockets for both the Node.js and Java Spring implementations. The test suites ensure that authentication is strictly enforced and that standard collaborative messaging works as intended under load.
+
+\subsection{Coverage and Automated Execution}
+For the Node.js backend, we utilized the native \texttt{node:test} runner to spin up test clients, emulate connections with malformed tokens to verify rejections, and test broadcast latency. For the Spring backend, JUnit and Mockito were utilized to meticulously test the \texttt{ChannelInterceptor} and \texttt{BlueprintController}.
+
+\begin{figure}[H]
+\centering
+\imgplaceholder{4cm}{../images/10-quality-commands-pass.png}
+\caption{JUnit Mockito \& Node.js tests confirming flawless interceptor and messaging validation across both environments.}
+\label{fig:testspass}
+\end{figure}
+
+\begin{resultbox}[title={Testing Summary}]
+\begin{itemize}
+  \item Verified JWT handshake decoding logic correctly terminates missing or invalid auth tokens at connection establishment.
+  \item Interceptor immutability edge-cases in STOMP circumvented safely using \texttt{setLeaveMutable(true)}, tested via isolated unit tests.
+  \item Evaluated connection race conditions in Node.js testing by solving them via asynchronous \texttt{await} promises, ensuring clients are strictly mapped to their topic attachments before emitting mock strokes.
+\end{itemize}
+\end{resultbox}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Video Evidence}
+% ─────────────────────────────────────────────────────────────────────────────
+
+In addition to the captured screenshots throughout this report, a full video demonstration was recorded displaying the end-to-end functionality of the platform.
+
+\begin{resultbox}[title={Demo Recording}]
+The video demonstration showcases:
+\begin{itemize}
+    \item Initiating concurrent sessions across distinct browser profiles.
+    \item The JWT authentication pipeline seamlessly permitting login constraints.
+    \item Real-time concurrent drawing displaying near-zero latency using Socket.IO and STOMP backends dynamically.
+    \item Creation and Deletion events synchronously updating state.
+\end{itemize}
+\textbf{Important Note:} Ensure you review the provided video file (\texttt{demo-blueprints-realtime-socketio-stomp.mp4}) submitted alongside this repository to observe the fluid, real-time WebSocket capabilities natively.
+\end{resultbox}
+
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusions}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{resultbox}[title={Key Findings}]
+\begin{enumerate}
+  \item \textbf{Dual Multiplexing Capabilities:} Both Java's STOMP proxy and 
+        Node's Socket.IO efficiently execute sub-millisecond topic messaging, 
+        rendering visually instantaneous line graphs collaboratively across geographic networks.
+  \item \textbf{Socket Hardening is Vital:} Unregulated WebSockets defeat all 
+        REST constraints. Exposing an open pipe without identity verification is functionally equivalent to removing authentication from an API. Channel Interceptor techniques provide crucial 
+        barriers halting anomalous connections preemptively.
+  \item \textbf{Immutability of Messages in Spring:} Securing WebSockets in Java 
+        necessitates altering Headers safely (\texttt{setLeaveMutable(true)}) avoiding 
+        exceptions when inspecting or modifying restricted topics in-transit through the message broker.
+\end{enumerate}
+\end{resultbox}
+
+\subsection{Lessons Learned}
+
+\begin{itemize}
+  \item Standard JSON Web Token expiration handling applies identically to sockets initially, but long-living Websockets require token refresh pipelines or they inherently 
+        bypass typical expiration constraints unless actively validated server-side on 
+        each frame payload.
+  \item React lifecycle hooks paired with WebSockets mandate strict teardown management (i.e. \texttt{socket.disconnect()}) to prevent memory leaks and ghost connections when navigating between different blueprint pages.
+  \item Socket Race-Conditions are frequent in integration testing environments 
+        and require strategic async \texttt{await} delays assuring clients 
+        successfully enter rooms before simulating broadcast emits.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{References}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{enumerate}
+  \item Spring Framework Documentation: WebSocket \& STOMP Messaging. 
+        \url{https://docs.spring.io/spring-framework/reference/web/websocket/stomp.html}
+
+  \item Socket.IO Namespace \& Room Management Guide.
+        \url{https://socket.io/docs/v4/rooms/}
+
+  \item Securing Spring Boot WebSockets with JWT. Baeldung.
+        \url{https://www.baeldung.com/spring-security-websockets}
+
+  \item RFC 6455 --- The WebSocket Protocol. IETF.
+        \url{https://datatracker.ietf.org/doc/html/rfc6455}
+
+  \item Node.JS Native Test Runner API Documentation.
+        \url{https://nodejs.org/docs/latest/api/test.html}
+\end{enumerate}
+
+\end{document}

@@ -17,6 +17,14 @@
 
 ---
 
+## 📄 Laboratory Report
+
+The comprehensive formal documentation for this laboratory—detailing the dual realtime architecture, JWT socket hardening, test strategies, and conclusions—can be found in the generated PDF report:
+
+👉 **[View Full Lab 7 Report (PDF)](./report/main.pdf)**
+
+---
+
 ## 🎯 Objective
 
 Implement realtime collaboration for BluePrints while keeping secured CRUD integration and demonstrating protocol interoperability with **Socket.IO** and **STOMP**.
