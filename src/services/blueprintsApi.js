@@ -73,17 +73,33 @@ const requestJson = async (url, init) => {
 const pathWithApi = (baseUrl, suffix) => `${baseUrl.replace(/\/$/, '')}/api${suffix}`
 
 export const createBlueprintsApi = ({ apiBase }) => {
+  const TOKEN_KEY = 'rt.jwt'
   const base = apiBase.replace(/\/$/, '')
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) return {}
+    return { Authorization: `Bearer ${token}` }
+  }
+
   return {
+    setToken(token) {
+      if (!token) return
+      localStorage.setItem(TOKEN_KEY, token)
+    },
+
     async listByAuthor(author) {
       const encodedAuthor = encodeURIComponent(author)
 
       try {
-        const payload = await requestJson(pathWithApi(base, `/blueprints?author=${encodedAuthor}`))
+        const payload = await requestJson(pathWithApi(base, `/blueprints/${encodedAuthor}`), {
+          headers: getAuthHeaders(),
+        })
         return normalizeBlueprintList(payload)
       } catch {
-        const payload = await requestJson(pathWithApi(base, `/blueprints/${encodedAuthor}`))
+        const payload = await requestJson(pathWithApi(base, `/blueprints?author=${encodedAuthor}`), {
+          headers: getAuthHeaders(),
+        })
         return normalizeBlueprintList(payload)
       }
     },
@@ -91,6 +107,7 @@ export const createBlueprintsApi = ({ apiBase }) => {
     async getByAuthorAndName(author, name) {
       const payload = await requestJson(
         pathWithApi(base, `/blueprints/${encodeURIComponent(author)}/${encodeURIComponent(name)}`),
+        { headers: getAuthHeaders() },
       )
       return normalizeBlueprint(payload)
     },
@@ -98,6 +115,7 @@ export const createBlueprintsApi = ({ apiBase }) => {
     async create(blueprint) {
       const payload = await requestJson(pathWithApi(base, '/blueprints'), {
         method: 'POST',
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           author: blueprint.author,
           name: blueprint.name,
@@ -112,6 +130,7 @@ export const createBlueprintsApi = ({ apiBase }) => {
         pathWithApi(base, `/blueprints/${encodeURIComponent(author)}/${encodeURIComponent(name)}`),
         {
           method: 'PUT',
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             author: blueprint.author,
             name: blueprint.name,
@@ -125,7 +144,7 @@ export const createBlueprintsApi = ({ apiBase }) => {
     async remove(author, name) {
       await requestJson(
         pathWithApi(base, `/blueprints/${encodeURIComponent(author)}/${encodeURIComponent(name)}`),
-        { method: 'DELETE' },
+        { method: 'DELETE', headers: getAuthHeaders() },
       )
     },
   }

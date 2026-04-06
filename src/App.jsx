@@ -89,6 +89,7 @@ export default function App() {
   const initialAuthor = queryParams.get('author') || 'juan'
   const initialBlueprint = queryParams.get('name') || 'blueprint-1'
   const initialTech = queryParams.get('tech')
+  const initialToken = queryParams.get('token')
 
   const [tech, setTech] = useState(BLUEPRINT_TECH.none)
   const [author, setAuthor] = useState(initialAuthor)
@@ -109,6 +110,13 @@ export default function App() {
   const unsubRef = useRef(null)
   const socketRef = useRef(null)
   const api = useMemo(() => createBlueprintsApi({ apiBase: API_BASE }), [])
+
+  useEffect(() => {
+    if (initialToken) {
+      api.setToken(initialToken)
+      setMessage('JWT token received from login app. Authenticated CRUD enabled.')
+    }
+  }, [api, initialToken])
 
   const activeBlueprintName = selectedName || nameInput.trim()
   const totalPointsByAuthor = summarizePoints(blueprints)
@@ -131,7 +139,11 @@ export default function App() {
       const list = await api.listByAuthor(author.trim())
       setBlueprints(list)
     } catch (err) {
-      setError(`Could not load blueprints: ${err.message}`)
+      const detail = err?.message || 'unknown error'
+      const authHint = detail.includes('401')
+        ? ' Open the app from 5173 after login so the JWT is passed to 5174.'
+        : ''
+      setError(`Could not load blueprints: ${detail}.${authHint}`)
       setBlueprints([])
     } finally {
       setIsLoadingList(false)
