@@ -1,5 +1,7 @@
+import { createElement } from 'react'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
+import App from '../src/App.jsx'
 import * as stompLib from '../src/lib/stompClient.js'
 import * as socketLib from '../src/lib/socketIoClient.js'
 
@@ -92,7 +94,7 @@ describe('App component', () => {
   })
 
   test('renders app and loads author blueprint list', async () => {
-    render(<App />)
+    render(createElement(App))
 
     expect(screen.getByText(/Blueprints Real-Time Collaboration Studio/i)).toBeTruthy()
 
@@ -102,7 +104,7 @@ describe('App component', () => {
   })
 
   test('refresh list for another author', async () => {
-    render(<App />)
+    render(createElement(App))
 
     fireEvent.change(screen.getByPlaceholderText('author'), { target: { value: 'john' } })
     fireEvent.click(screen.getByRole('button', { name: /Refresh/i }))
@@ -113,7 +115,7 @@ describe('App component', () => {
   })
 
   test('open blueprint and draw with STOMP', async () => {
-    render(<App />)
+    render(createElement(App))
 
     await waitFor(() => {
       expect(screen.getAllByText('mybp').length).toBeGreaterThan(0)
@@ -138,7 +140,7 @@ describe('App component', () => {
   })
 
   test('open blueprint and draw with Socket.IO', async () => {
-    render(<App />)
+    render(createElement(App))
 
     await waitFor(() => {
       expect(screen.getAllByText('mybp').length).toBeGreaterThan(0)
@@ -167,7 +169,7 @@ describe('App component', () => {
   })
 
   test('create, save and delete actions call API endpoints', async () => {
-    render(<App />)
+    render(createElement(App))
 
     fireEvent.change(screen.getByPlaceholderText('author'), { target: { value: 'john' } })
     fireEvent.change(screen.getByPlaceholderText('blueprint-1'), { target: { value: 'mybp' } })
