@@ -53,14 +53,37 @@ At the end, the system should:
 
 ---
 
-## 🏗️ Architecture (Quick View)
+## 🏗️ Architecture (Advanced Mermaid)
 
-```text
-JWT Frontend (:5173)
-   └─ login + token handoff ───────────────► Realtime Frontend (:5174)
-                                              ├─ REST CRUD ───────────► Security API (:8080)
-                                              ├─ Socket.IO events ────► Socket.IO backend (:3001)
-                                              └─ STOMP publish/sub ───► STOMP backend (:8081)
+```mermaid
+flowchart LR
+    subgraph A[Client Apps]
+      JWTUI[JWT Frontend\narsw-blueprints-api-react-lab\n:5173]
+      RTUI[Realtime Frontend\narsw-blueprints-api-realtime-sockets-lab\n:5174]
+    end
+
+    subgraph B[Core API]
+      SEC[Security Backend\narsw-blueprints-api-security-lab\n:8080]
+    end
+
+    subgraph C[Realtime Backends]
+      IO[Socket.IO Backend\nblueprints-example-backend-socketio-node\n:3001]
+      ST[STOMP Backend\nblueprints-example-backend-stomp\n:8081 integrated]\n+    end
+
+    JWTUI -->|1. Login + JWT issue| SEC
+    JWTUI -->|2. Token handoff (query param)| RTUI
+    RTUI -->|3. Authenticated CRUD\nGET/POST/PUT/DELETE| SEC
+    RTUI -->|4A. join-room/draw-event| IO
+    IO -->|5A. blueprint-update| RTUI
+    RTUI -->|4B. SEND /app/draw| ST
+    ST -->|5B. MESSAGE /topic/blueprints.author.name| RTUI
+
+    classDef ui fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e;
+    classDef api fill:#ecfccb,stroke:#65a30d,stroke-width:2px,color:#365314;
+    classDef rt fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d;
+    class JWTUI,RTUI ui;
+    class SEC api;
+    class IO,ST rt;
 ```
 
 **Conventions**
@@ -141,6 +164,16 @@ client.subscribe(`/topic/blueprints.${author}.${name}`, (msg) => { /* append poi
 
 - [demo-blueprints-realtime-socketio-stomp.mp4](demo-blueprints-realtime-socketio-stomp.mp4)
 
+### 📽️ What the demo shows (<= 90s)
+
+1. User logs in from `:5173` and obtains JWT.
+2. User opens Realtime Lab on `:5174` with token handoff.
+3. Author + blueprint are loaded from secured API on `:8080`.
+4. Create, Save/Update, and Delete operations are executed successfully.
+5. Two-tab collaboration is demonstrated with Socket.IO (`:3001`).
+6. Two-tab collaboration is demonstrated with STOMP (`:8081`).
+7. Final evidence shows lint, test, coverage, and build passing.
+
 ---
 
 ## 📸 Evidence Gallery
@@ -188,6 +221,40 @@ npm run test
 npm run coverage
 npm run build
 ```
+
+---
+
+## 📊 Team Deliverables
+
+- ✅ Frontend code integrated with CRUD and realtime transport (Socket.IO and STOMP modes available).
+- ✅ Short demo video (<= 90s) showing live collaboration and CRUD operations.
+- ✅ Team README with setup, used endpoints, room/topic decisions, and integration details.
+
+---
+
+## 🧮 Suggested Grading Rubric Coverage
+
+- **Functionality (40%)**: stable RT join/broadcast, blueprint isolation by room/topic, secured CRUD operational.
+- **Technical Quality (30%)**: clean structure, explicit error handling, clear and complete documentation.
+- **Observability/DX (15%)**: event and connection logs in realtime backends, reproducible startup flow, quick endpoint checks.
+- **Analysis (15%)**: protocol comparison and practical findings on latency/reconnection behavior.
+
+---
+
+## 🔐 Security Minimums
+
+- Payload validation for draw events and CRUD inputs (recommended via zod/joi or backend validators).
+- Restricted CORS origins in production.
+- JWT authentication integrated in the end-to-end flow.
+- Optional enhancement: authorization by blueprint room/topic ownership.
+
+---
+
+## 📈 Analysis Notes (Socket.IO vs STOMP)
+
+- **Socket.IO**: simpler event model for frontend teams and fast setup in Node ecosystems.
+- **STOMP**: explicit destination model (`/app`, `/topic`) fits Spring broker architecture.
+- **Observed in this lab**: both protocols satisfy live-collaboration requirements when room/topic naming is consistent and subscriptions are aligned.
 
 ---
 
