@@ -165,6 +165,7 @@ Open:
 - Start JWT app (`arsw-blueprints-api-react-lab`) on `http://localhost:5173`.
 - Log in against security backend (`arsw-blueprints-api-security-lab`) on `http://localhost:8080`.
 - Click **Realtime Lab** in the top navigation to open this app on `http://localhost:5174` with prefilled author.
+- The handoff includes the JWT so CRUD requests from `5174` are authenticated against the secured API.
 
 ---
 
